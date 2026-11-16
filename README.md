@@ -3,8 +3,8 @@
 特征选择与回归的真实业务分析小型项目。完整模拟客户、痛点、上下游、算法公式与一天工作剧本见 [BUSINESS.md](BUSINESS.md)。
 
 ## 模块与业务流程
-数据接入（JSON/CSV、字段验证、批次指纹）→ 参数化分析（异步 Python worker）→ 结果复核（指标、图形、明细、解释、批准）→ 定时分发（本地收件箱、CSV/JSON、SHA256）；另有业务总览和审计轨迹。
-三个贯穿全栈的实体：Dataset 数据批次、Job 分析任务、Report 分发计划；辅助 User、Audit、Delivery。
+多源汇合（抄表/排产/环境三路按线体与日期汇合、缺项待补、异值裁决、整组发布）→ 数据接入（JSON/CSV、字段验证、批次指纹）→ 参数化分析（异步 Python worker）→ 结果复核（指标、图形、明细、解释、批准）→ 定时分发（本地收件箱、CSV/JSON、SHA256）；另有业务总览和审计轨迹。
+三个贯穿全栈的实体：Dataset 数据批次、Job 分析任务、Report 分发计划；汇合链路另有 SourceBatch 来源批次、MergeSample 汇合样本、Arbitration 裁决、PublishRecord 发布记录；辅助 User、Audit、Delivery。
 
 ## 快速启动
 ```bash
@@ -38,6 +38,9 @@ COMPOSE_PROJECT_NAME=energy-ridge；FRONTEND_PORT=18215；BACKEND_PORT=19215；D
 
 ## 数据与验收
 所有数据为固定随机种子生成的模拟业务数据，不能作为实际生产决策证据。项目独立算法、输入边界及业务局限详见 BUSINESS.md。测试与截图统一存放 ../../test-artifacts/gb-1016/，源码不含日志/截图/测试报告。
+
+## 多源汇合约定
+三路来源（抄表、排产、环境记录）按线体与日期汇合为能耗日样本；各班组流独立修订，新版生效即作废旧版并触发受影响样本重汇合。缺字段样本待补齐；同字段异值交人工裁决，候选值与来源批次版本随裁决留档；上游更新使相关裁决失效，重新确认后才可发布。发布以线体为单位整组原子生效，样本与裁决依据同事务写入，内容未变时沿用已有数据批次；汇合任务持久化，中断后由 worker 恢复。归因试验只读取发布后的数据批次，既有整行 JSON/CSV 导入不受影响。
 清理本项目演示数据：`docker compose down -v --remove-orphans`（会删除本项目命名卷）。
 
 ## License

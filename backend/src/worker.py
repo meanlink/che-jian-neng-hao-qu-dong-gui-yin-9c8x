@@ -7,6 +7,7 @@ from src.config.settings import REDIS_URL
 from src.models import Job, Dataset, Report
 from src.services.business import analyze
 from src.services.reports import deliver
+from src.services import merge as merge_svc
 from src.services.audit import record
 logging.basicConfig(level=logging.INFO)
 def execute(job_id):
@@ -29,6 +30,13 @@ def tick():
     with Session() as db:
         queued=list(db.scalars(select(Job.id).where(Job.status=='queued').limit(3)))
     for job_id in queued:execute(job_id)
+    with Session() as db:
+        try:
+            n=merge_svc.process_tasks(db,limit=500)
+            if n:record(db,'worker','merge.sweep',{'processed':n})
+            db.commit()
+        except Exception:
+            db.rollback();logging.exception('Merge sweep failed; pending tasks remain for next tick')
     with Session() as db:
         for r in db.scalars(select(Report).where(Report.enabled==True,Report.next_run<=time.time())):
             d=deliver(db,r)

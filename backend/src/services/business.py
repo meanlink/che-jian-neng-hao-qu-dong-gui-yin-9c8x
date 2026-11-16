@@ -13,6 +13,15 @@ from sklearn.preprocessing import StandardScaler
 
 FEATURES = {"units": "产量", "run_hours": "运行小时", "temp_c": "环境温度", "idle_hours": "待机小时"}
 
+# 三路来源渠道：抄表、排产、环境记录；各渠道上报的日样本字段。
+CHANNELS = {
+    "meter": {"label": "抄表", "fields": ["kwh"]},
+    "schedule": {"label": "排产", "fields": ["units", "run_hours", "idle_hours"]},
+    "env": {"label": "环境记录", "fields": ["temp_c"]},
+}
+MERGE_FIELDS = ["units", "run_hours", "temp_c", "idle_hours", "kwh"]
+FIELD_BOUNDS = {"units": (0, 10_000_000), "run_hours": (0, 24), "temp_c": (-100, 100), "idle_hours": (0, 24), "kwh": (0, 1_000_000_000)}
+
 
 def metadata():
     return {
@@ -23,6 +32,7 @@ def metadata():
         "upstream": "每日线体抄表、生产工时与车间温度记录", "downstream": "能源专员与排产组的下周负荷评审。",
         "entities": ["能耗日样本", "归因试验", "负荷简报计划"], "dataset_name": "澄川_冲压一线_160日能耗.csv",
         "columns": [{"key": "day", "label": "日期", "type": "string"}, {"key": "line", "label": "线体", "type": "string"}, {"key": "units", "label": "日产量", "type": "number"}, {"key": "run_hours", "label": "运行小时", "type": "number"}, {"key": "temp_c", "label": "温度℃", "type": "number"}, {"key": "idle_hours", "label": "待机小时", "type": "number"}, {"key": "kwh", "label": "耗电kWh", "type": "number"}],
+        "channels": [{"key": key, "label": spec["label"], "fields": spec["fields"]} for key, spec in CHANNELS.items()],
         "parameters": [{"key": "max_features", "label": "最多解释变量", "type": "number", "default": 4, "min": 2, "max": 4}, {"key": "scenario_pct", "label": "情景负荷变化 %", "type": "number", "default": 10, "min": -30, "max": 30}],
         "workbench_title": "特征筛选与负荷情景", "action_label": "训练并验证能耗模型", "unit": "kWh", "accent": "oklch(49% 0.11 145)", "style": "energy-sheet",
         "seed_story": ["08:10 导入澄川_冲压一线_160日能耗.csv。", "08:20 核对冲压 P01 的产量、运行小时和独立电表读数。", "09:00 允许最多 4 个解释变量，保留最后 20% 日期作验证。", "09:15 查看时间序列交叉验证选出的变量与岭惩罚。", "09:30 评估实际留出期 RMSE，不用训练误差替代。", "10:00 试算负荷增加 10% 的平均日电耗。", "14:00 将系数解释和验证误差交给排产组，设置例会简报计划。"],

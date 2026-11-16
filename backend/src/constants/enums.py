@@ -8,3 +8,15 @@ class JobStatus(str, Enum):
     running = 'running'
     completed = 'completed'
     failed = 'failed'
+class Channel(str, Enum):
+    meter = 'meter'
+    schedule = 'schedule'
+    env = 'env'
+class MergeStatus(str, Enum):
+    pending_fill = 'pending_fill'
+    pending_arbitration = 'pending_arbitration'
+    publishable = 'publishable'
+    published = 'published'
+class ArbitrationStatus(str, Enum):
+    valid = 'valid'
+    stale = 'stale'
